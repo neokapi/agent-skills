@@ -3,16 +3,20 @@
 Portable [Agent Skills](https://github.com/agentskills/agentskills) for
 [neokapi](https://github.com/neokapi/neokapi) — install into GitHub Copilot,
 Claude Code, Cursor, Windsurf, VS Code, Codex, and the rest of the SKILL.md
-ecosystem with the [`skills`](https://github.com/vercel-labs/skills) CLI:
+ecosystem with the [`skills`](https://github.com/vercel-labs/skills) CLI.
+
+This is a **collection**, so name the skill with `--skill`:
 
 ```bash
-npx skills add neokapi/agent-skills                    # all detected tools
-npx skills add neokapi/agent-skills -a github-copilot  # one tool
-npx skills add neokapi/agent-skills -g                 # user-global
+npx skills add neokapi/agent-skills --skill kapi                    # pick your tools
+npx skills add neokapi/agent-skills --skill kapi -a github-copilot  # a specific tool (repeat -a)
+npx skills add neokapi/agent-skills --list                         # preview the collection
+npx skills update kapi                                             # refresh later
 ```
 
-You can also drop a skill in by hand — copy its directory into your tool's skill
-folder (`.github/skills/`, `.claude/skills/`, `~/.copilot/skills/`, …).
+Add `-g` to install user-wide instead of in the current project. You can also drop
+a skill in by hand — copy its directory into your tool's skill folder
+(`.github/skills/`, `.claude/skills/`, `~/.copilot/skills/`, …).
 
 ## Skills
 
