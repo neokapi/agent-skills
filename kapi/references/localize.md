@@ -21,7 +21,7 @@ kapi preserves structure, tags, and placeholders (round-trip). Add `--credential
 
 **Ongoing / app localization, or translating it yourself under brand + terminology
 guardrails** — bind a project first (`kapi init`), then `kapi extract → fill the
-targets → kapi merge → kapi verify` (below). `kapi extract` and `kapi merge` operate
+targets → kapi merge → kapi check --ship` (below). `kapi extract` and `kapi merge` operate
 on a project; run them inside one (or with `-p <recipe>`), never on a bare file path.
 
 ## Commands at a glance (use these exact forms)
@@ -31,13 +31,13 @@ Run these as written — don't guess flags. When in doubt, `kapi <cmd> --help`.
 ```bash
 kapi extract --target-lang fr                  # → out/<name>.en-to-fr.xliff (one --target-lang)
 kapi merge -i out/*.xliff                       # -i is REQUIRED and repeatable; positional paths are ignored
-kapi verify --json                              # the gate: brand + terminology + QA in one shot (prefer this)
-kapi term-check ./locales/fr.json --target-lang fr   # file is POSITIONAL; there is no --source/--target
+kapi check --ship --json                              # the gate: brand + terminology + QA in one shot (prefer this)
+kapi exec term-check ./locales/fr.json --target-lang fr   # file is POSITIONAL; there is no --source/--target
 kapi termbase lookup "board" -t fr              # approved wording; termbase uses -s/-t, not --*-lang
 kapi brand guide                                # the voice to follow (no flag inside a project)
 ```
 
-Inside a project, prefer `kapi verify` over running `term-check`/QA by hand — it
+Inside a project, prefer `kapi check --ship` over running `term-check`/QA by hand — it
 runs every bound gate together and pairs source↔target for you.
 
 ## Translate the content yourself, through kapi (don't hand-translate files)
@@ -64,12 +64,12 @@ as unfinished until kapi confirms the result:
 
 ```bash
 kapi merge -i out/*.xliff            # write translations back into the target files + TM
-kapi verify --json                   # in a project: brand + terminology + QA in one gate
-kapi term-check ./locales/fr.json    # one-off, no project: terminology check on the file
+kapi check --ship --json                   # in a project: brand + terminology + QA in one gate
+kapi exec term-check ./locales/fr.json    # one-off, no project: terminology check on the file
 ```
 
-`kapi verify` is the gate inside a project — read its findings, fix them, and re-run
-until it passes. For a one-off file with no project, `kapi term-check` (plus the QA in
+`kapi check --ship` is the gate inside a project — read its findings, fix them, and re-run
+until it passes. For a one-off file with no project, `kapi exec term-check` (plus the QA in
 `kapi run translate-qa`) plays the same role. Either way, a clean result, not a
 written file, is the finish line.
 
@@ -87,12 +87,56 @@ kapi translate ./deck.pptx --target-lang ja -o ./out/deck.ja.pptx
 profile and termbase still apply. Format is detected from the extension and
 written back unchanged (round-trip), preserving structure, tags, and placeholders.
 
+## Bring a project up to date (status → up → review)
+
+In a project, don't translate file by file — converge. State is derived from the
+files on every command (like `git status`), so always start by reading it:
+
+```bash
+kapi status                  # per-locale coverage + each scope's ship standing
+kapi up                      # converge: loop the project's default flow over ALL
+                             #   content × every target language until each scope
+                             #   ships or "parks"; runs locales concurrently
+kapi up --plan               # dry run: pending work, TM leverage, token estimate
+kapi up --json               # NDJSON event stream (one event per line, final
+                             #   record = the result) — use this to drive the loop
+```
+
+`kapi up` is the one convergence verb. With no `defaults.flow` in the recipe it
+runs the built-in default flow (TM recycle → AI translate) and materializes the
+localized files. Drift is never an error — a behind locale is *pending*, and work
+a machine can't finish *parks* (reported, exit 0), so neither blocks you. Use
+`--json` for the machine-readable event stream; the `up` and `up_plan` MCP tools
+expose the same loop and dry run to an assistant. `kapi run <flow>` is only for a
+*custom* one-off pipeline (one named flow, one pass) — not the daily loop.
+
+In a server-connected project (recipe has a `server:` block), `kapi up` runs on
+the Bowrain server by default and streams progress back; `kapi up --local`
+converges on this machine and pushes the results. `kapi push` / `kapi pull` are
+**transport only** — they move project state and never translate. There is no
+`kapi sync`.
+
+Review promotes a translation past `translated` to `reviewed`. The queue and the
+approval are two commands:
+
+```bash
+kapi status --review         # translated units awaiting a human
+# approve one — a `review` change-set addressed by the unit's file/id/locale:
+kapi apply <<<'{"kind":"review","file":"src/nb.json","id":"save.label","locale":"nb","status":"reviewed"}'
+```
+
+The decision lands in the project state store and counts the unit as `reviewed`,
+so the next `kapi up` sees it shipped. `kapi check --ship` is the opt-in release
+bar — it runs the project's brand/terminology/QA gates plus the `ship_gate` /
+`source_gate` coverage gates and exits non-zero only when you ask for it; ordinary
+target drift never blocks.
+
 ## Keep terminology consistent
 
 ```bash
 kapi termbase import glossary.csv --format csv -s en -t fr --local   # also: json, tbx
 kapi termbase lookup "checkout" -s en -t fr --json
-kapi term-check ./locales/fr.json --json                            # flag wrong/missing terms
+kapi exec term-check ./locales/fr.json --json                            # flag wrong/missing terms
 ```
 
 Use the approved (preferred) term; avoid deprecated/forbidden ones. A bound
@@ -102,7 +146,7 @@ termbase also feeds the translation step.
 
 ```bash
 kapi formats list --json                 # what reads and writes
-kapi word-count ./report.docx --json     # translatable word/segment count
+kapi stats ./report.docx --json          # translatable word/segment count
 ```
 
 Direct round-trip, or a bilingual extract → translate → merge cycle for vendor

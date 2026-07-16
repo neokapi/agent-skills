@@ -38,7 +38,7 @@ Fill in `brand.yaml` from whatever signal is available:
   emails, docs) — derive tone and vocabulary, and turn weak→strong pairs into
   `examples` (before / after).
 - **A website** the user links — fetch a page or two (your web tool, or `curl`),
-  read the live copy, and capture its voice. For a saved page, `kapi word-count
+  read the live copy, and capture its voice. For a saved page, `kapi stats
   page.html` / `kapi extract` pulls the text to analyze.
 
 Keep it concrete: 2–4 personality adjectives, a handful of forbidden/competitor
@@ -126,7 +126,7 @@ kapi apply changeset.jsonl
 The `brand` entry is written into the project's committed brand voice profile
 YAML (the `defaults.brand_voice.profile_file` the recipe binds), and the existing
 import compiles it into the local brand store. `git diff` shows the one new rule;
-the next `kapi brand check` / `kapi verify` enforces it. `list` is `forbidden`,
+the next `kapi brand check` / `kapi check --ship` enforces it. `list` is `forbidden`,
 `competitor`, or `preferred`; the entry requires a `.kapi` project. (Add an
 approved term instead with a `term` entry — see [create.md](create.md).)
 
